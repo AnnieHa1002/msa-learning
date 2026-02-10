@@ -1,0 +1,51 @@
+# === Build ===
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# === Gradle ===
+.gradle/
+
+# === IDE ===
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.vscode/
+*.swp
+*.swo
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Security: env / secrets / keys ===
+*.env
+.env.*
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
+*.pfx
+*.crt
+*.cer
+application-secret*.yml
+application-secret*.yaml
+application-secret*.properties
+secret*.yml
+secret*.yaml
+secret*.properties
+
+# === Application sensitive configs ===
+src/main/resources/application-local.yml
+src/main/resources/application-local.yaml
+src/main/resources/application-local.properties
+src/main/resources/application-prod.yml
+src/main/resources/application-prod.yaml
+src/main/resources/application-prod.properties
+
+# === Logs ===
+*.log
+logs/
