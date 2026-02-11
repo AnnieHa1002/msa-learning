@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: msa-learning
+
+server:
+  port: 19090
+
+# Eureka Server Config : main server that composes server registry
+# for more details, please refer to https://cloud.spring.io/spring-cloud-netflix/multi/multi__service_discovery_eureka_clients.html
+# for Spring guide about Eureka https://docs.spring.io/spring-cloud-netflix/docs/current/reference/html/#service-discovery-eureka-clients
+eureka:
+    client:
+      service-url:
+        defaultZone: http://localhost:19090/eureka/
+      register-with-eureka: false
+      fetch-registry: false
+    instance:
+      hostname: localhost
+
