@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrderController {
 
+    private final OrderService orderService;
 
 
     @GetMapping("/{orderId}")
     public String getOrderById(@PathVariable Long orderId) {
-        return "주문";
+        return orderService.getOrder(orderId);
     }
 }
