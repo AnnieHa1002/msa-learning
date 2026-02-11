@@ -7,8 +7,10 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 | 모듈 | 역할 | 포트 |
 |------|------|------|
 | `com.sparta.msa_learning.server` | Eureka Server (서비스 레지스트리) | 19090 |
-| `com.sparta.msa_learning.first` | Eureka Client (서비스 1) | 19091 |
-| `com.sparta.msa_learning.second` | Eureka Client (서비스 2) | 19092 |
+| `com.sparta.msa_learning.order` | Order Service (주문) | 19091 |
+| `com.sparta.msa_learning.product` | Product Service (상품) | 19092 |
+| `com.sparta.msa_learning.product2` | Product Service (상품) | 19093 |
+| `com.sparta.msa_learning.product3` | Product Service (상품) | 19094 |
 
 ## 기술 스택
 
@@ -16,12 +18,30 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 - Spring Boot 4.0.2
 - Spring Cloud 2025.1.0 (Oakwood)
 - Spring Cloud Netflix Eureka
+- Spring Cloud OpenFeign
 
-## 실행 방법
+## 실습 진행 과정
 
-1. Eureka Server 실행 (`com.sparta.msa_learning.server`)
-2. Eureka Client 실행 (`com.sparta.msa_learning.first`, `com.sparta.msa_learning.second`)
-3. Eureka Dashboard 확인: http://localhost:19090
+### 1단계: Eureka Server 실습
+
+Eureka Server를 띄우고, first와 second 서비스를 등록하여 서비스 디스커버리가 동작하는지 확인했다.
+
+| 커밋 | 내용 |
+|------|------|
+| `419f436` | Eureka Server 및 first, second 서비스 프로젝트 세팅 |
+
+### 2단계: OpenFeign 로드 밸런서 실습
+
+서비스 이름을 order, product로 변경하고, OpenFeign을 활용한 서비스 간 통신과 로드 밸런싱을 실습했다.
+
+| 커밋 | 내용 |
+|------|------|
+| `d6128ec` | first, second를 order, product로 변경 |
+| `5700bda` | ProductController 구현 |
+| `c124252` | OrderController 구현 |
+| `f84e727` | ProductClient (FeignClient 인터페이스) 구현 |
+| `91b2784` | OrderService에서 ProductClient를 통한 서비스 간 호출 구현 |
+| `6ff31b9` | OpenFeign 관련 문서 정리 |
 
 > 트러블슈팅은 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) 참고
 
@@ -82,8 +102,8 @@ Eureka가 이 문제를 해결해준다.
 
 ```
 [Eureka Server] (:19090)
-    ├── first 서비스 등록 (:19091) ── UP
-    └── second 서비스 등록 (:19092) ── UP
+    ├── ORDER-SERVICE   (:19091) ── UP
+    └── PRODUCT-SERVICE (:19092, :19093, :19094) ── UP
 ```
 
 1. **서비스 등록(Register)** : 각 서비스(Client)가 실행되면 Eureka Server에 자신의 정보를 등록
@@ -100,7 +120,88 @@ Eureka가 이 문제를 해결해준다.
 
 ---
 
-## 3. Learning Points
+## 3. OpenFeign과 로드밸런싱
+
+### OpenFeign이란?
+
+Spring Cloud OpenFeign은 선언적 HTTP 클라이언트로, 인터페이스와 어노테이션만으로 다른 서비스의 API를 호출할 수 있게 해준다. Eureka와 함께 사용하면 서비스 이름만으로 호출이 가능하고, 별도의 URL 관리가 필요 없다.
+
+### 구현 구조
+
+```
+[Order Service] (:19091)
+    │
+    │  @FeignClient(name="product-service")
+    │  ProductClient 인터페이스로 호출
+    │
+    ├──→ [Product Service] (:19092)
+    ├──→ [Product Service] (:19093)   ← Round Robin 로드밸런싱
+    └──→ [Product Service] (:19094)
+```
+
+Order Service에서 `ProductClient` 인터페이스를 선언하면, OpenFeign이 Eureka에 등록된 `product-service` 인스턴스 중 하나를 선택하여 호출한다.
+
+```java
+@FeignClient(name="product-service")
+public interface ProductClient {
+    @GetMapping("/api/products/{id}")
+    String getProductById(@PathVariable Long id);
+}
+```
+
+### 검증 과정
+
+#### Step 1. Eureka에 서비스 등록 확인
+
+Order Service 1개와 Product Service 3개를 실행하고 Eureka Dashboard에서 모든 인스턴스가 UP 상태인지 확인했다.
+
+![Eureka Dashboard - Order와 Product 서비스 등록 확인](images/orderAndProducts.png)
+
+- ORDER-SERVICE: 1개 인스턴스 (19091)
+- PRODUCT-SERVICE: 3개 인스턴스 (19092, 19093, 19094)
+
+#### Step 2. Product API 포트별 직접 호출
+
+각 Product 인스턴스에 직접 요청하여 포트별로 정상 응답하는지 확인했다.
+
+![Product API 포트별 호출 결과](images/getProductWithPort.png)
+
+- `GET localhost:19092/api/products/1` → `상품 ID 1에 대한 정보를 반환합니다. PORT : 19092`
+- `GET localhost:19093/api/products/1` → `상품 ID 1에 대한 정보를 반환합니다. PORT : 19093`
+- `GET localhost:19094/api/products/1` → `상품 ID 1에 대한 정보를 반환합니다. PORT : 19094`
+
+각 인스턴스가 자신의 포트를 응답에 포함하여, 어떤 인스턴스가 처리했는지 구분할 수 있도록 했다.
+
+#### Step 3. Order API에서 Product 호출 확인
+
+Order Service를 통해 주문을 조회하면 내부적으로 FeignClient가 Product Service를 호출한다.
+
+![Order API 호출 결과](images/Order1and2.png)
+
+- `GET localhost:19091/api/orders/1` → `주문 ID: 1, 상품 ID 2에 대한 정보를 반환합니다. PORT : 19092 주문이 생성되었습니다.`
+- `GET localhost:19091/api/orders/2` → `주문 정보를 찾을 수 없습니다.`
+
+Order에서 Product를 FeignClient로 호출했을 때 응답에 Product의 포트 번호가 포함되어, 서비스 간 통신이 정상적으로 이루어지는 것을 확인했다.
+
+#### Step 4. Round Robin 로드밸런싱 확인
+
+같은 Order API를 반복 호출하여 Product Service의 포트가 순차적으로 바뀌는지 확인했다.
+
+![Round Robin 로드밸런싱 확인](images/seeHowPortChanges.png)
+
+```
+1차 호출 → PORT : 19093
+2차 호출 → PORT : 19092
+3차 호출 → PORT : 19094
+4차 호출 → PORT : 19093
+5차 호출 → PORT : 19092
+```
+
+같은 `GET localhost:19091/api/orders/1`을 반복 호출했을 때, 응답의 PORT가 19092 → 19093 → 19094 순서로 순환하며 바뀌는 것을 확인했다. OpenFeign + Eureka 조합에서 기본으로 **Round Robin** 방식의 로드밸런싱이 적용된다.
+
+---
+
+## 4. Learning Points
 
 ### MSA는 이미 경험하고 있었다
 
@@ -108,8 +209,7 @@ Eureka가 이 문제를 해결해준다.
 
 ### "안전한 배포"의 의미
 
-모놀리틱에서는 하나의 기능을 수정해도 전체를 다시 배포해야 하고, 그 과정에서 관련 없는 기능에 영향을 줄 수 있다. MSA에서는 변경된 서비스만 독립적으로 배포할 수 있어, 전에 들었던 "안전한 배포"는 바로 이 
-맥락이었다.
+모놀리틱에서는 하나의 기능을 수정해도 전체를 다시 배포해야 하고, 그 과정에서 관련 없는 기능에 영향을 줄 수 있다. MSA에서는 변경된 서비스만 독립적으로 배포할 수 있어, 전에 들었던 "안전한 배포"는 바로 이 맥락이었다.
 
 ### 트레이드오프가 존재한다
 
@@ -117,13 +217,21 @@ MSA는 배포와 장애 격리에서는 이점이 있지만, 개발 복잡도가
 
 ### Eureka는 서비스 간 "전화번호부"
 
-Eureka의 핵심 역할은 각 서비스가 서로의 위치를 알 수 있게 해주는 것이다. 직접 실행해보니 Eureka Dashboard에서 어떤 서비스가 살아있고(UP), 어떤 포트에서 접근 가능한지를 한눈에 확인할 수 있었다. 서비스 간 실제 통신 구현은 다음 단계에서 확인이 필요하다.
+Eureka의 핵심 역할은 각 서비스가 서로의 위치를 알 수 있게 해주는 것이다. 직접 실행해보니 Eureka Dashboard에서 어떤 서비스가 살아있고(UP), 어떤 포트에서 접근 가능한지를 한눈에 확인할 수 있었다.
 
+### OpenFeign으로 서비스 간 통신이 이렇게 간단해진다
+
+FeignClient 인터페이스 하나만 선언하면 다른 서비스의 API를 마치 로컬 메서드처럼 호출할 수 있다. URL을 하드코딩할 필요 없이 Eureka에 등록된 서비스 이름(`product-service`)만 지정하면 알아서 찾아간다. 이전에 궁금했던 "서비스 간 통신이 어떻게 되는지"에 대한 답을 찾은 것 같다.
+
+### 로드밸런싱은 자동으로 되었다
+
+별도의 로드밸런서 설정 없이도 OpenFeign + Eureka 조합만으로 Round Robin 로드밸런싱이 자동 적용되었다. 같은 API를 반복 호출하면 3개의 Product 인스턴스에 순차적으로 분배되는 것을 포트 번호로 직접 확인할 수 있었다.
 
 ---
 
-## 4. Timeline
+## 5. Timeline
 
 - 2026-02-10 : MSA와 Eureka에 대한 기본 개념 학습 시작
 - 2026-02-11 : Eureka Server 및 Client 프로젝트 생성 및 실행
+- 2026-02-11 : OpenFeign 적용, Product 3개 인스턴스 로드밸런싱 확인
 
