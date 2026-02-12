@@ -16,10 +16,11 @@ public class OrderService {
     }
 
     public String getOrder(Long orderId) {
-        if(orderId==1L) {
-            String productInfo =  getProductInfo(2L);
+        if (orderId == 1L) {
+            String productInfo = getProductInfo(2L);
             return "주문 ID: " + orderId + ", " + productInfo;
-        } else {
+        }
+        else {
             return "주문 정보를 찾을 수 없습니다.";
         }
     }
