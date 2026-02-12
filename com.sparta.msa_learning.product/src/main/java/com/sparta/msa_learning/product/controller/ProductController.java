@@ -19,6 +19,7 @@ public class ProductController {
     @Value("${server.port}")
     String serverPort;
 
+
     @GetMapping("")
     public String getProducts() {
         return "상품 목록을 반환합니다.";
@@ -27,8 +28,9 @@ public class ProductController {
     @GetMapping("/{id}")
     public String getProductById(@PathVariable Long id) {
         Product product = productService.getProductDetails(id);
-        String productInfo = "상품 ID: " + product.getId() + ", 이름: " + product.getName() + ", 가격: " + product.getPrice();
+        String productInfo = "상품 ID: " + product.getId() + ", 이름: " + product.getName() + ", 가격: " +
+                product.getPrice();
         productInfo += " (서버 포트: " + serverPort + ")";
-        return  productInfo;
+        return productInfo;
     }
 }
