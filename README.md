@@ -7,10 +7,11 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 | 모듈 | 역할 | 포트 |
 |------|------|------|
 | `com.sparta.msa_learning.server` | Eureka Server (서비스 레지스트리) | 19090 |
-| `com.sparta.msa_learning.order` | Order Service (주문) | 19091 |
-| `com.sparta.msa_learning.product` | Product Service (상품) | 19092 |
-| `com.sparta.msa_learning.product2` | Product Service (상품) | 19093 |
-| `com.sparta.msa_learning.product3` | Product Service (상품) | 19094 |
+| `com.sparta.msa_learning.gateway` | API Gateway | 19091 |
+| `com.sparta.msa_learning.order` | Order Service (주문) | 19092 |
+| `com.sparta.msa_learning.product` | Product Service (상품) | 19093 |
+| `com.sparta.msa_learning.product2` | Product Service (상품) | 19094 |
+| `com.sparta.msa_learning.product3` | Product Service (상품) | 19095 |
 
 ## 기술 스택
 
@@ -20,6 +21,7 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 - Spring Cloud Netflix Eureka
 - Spring Cloud OpenFeign
 - Resilience4j (Circuit Breaker)
+- Spring Cloud Gateway
 
 ## 실습 진행 과정
 
@@ -53,6 +55,15 @@ Resilience4j를 활용하여 장애 상황에서의 fallback 처리를 실습했
 | `3b13d4a` | Product 엔티티 구성 |
 | `c3d283e` | ProductService에 CircuitBreaker 및 fallback 메서드 구현 |
 
+### 4단계: API Gateway 실습
+
+Spring Cloud Gateway를 활용하여 클라이언트 요청을 각 서비스로 라우팅하고, GlobalFilter를 통한 요청 로깅을 실습했다.
+
+| 커밋 | 내용 |
+|------|------|
+| `a12b2f5` | API Gateway 프로젝트 추가 |
+| `112c6a9` | Gateway 설정 수정 (Spring Cloud Gateway 5.0 property 경로 대응) |
+
 > 트러블슈팅은 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) 참고
 
 ## 학습 문서
@@ -63,6 +74,7 @@ Resilience4j를 활용하여 장애 상황에서의 fallback 처리를 실습했
 | [Eureka](docs/01-eureka.md) | 서비스 디스커버리, 동작 방식, 실습 결과 |
 | [OpenFeign과 로드밸런싱](docs/02-openfeign.md) | 선언적 HTTP 클라이언트, Round Robin 로드밸런싱 검증 |
 | [Circuit Breaker](docs/03-circuitbreaker.md) | Resilience4j를 활용한 장애 격리와 fallback |
+| [API Gateway](docs/04-gateway.md) | Spring Cloud Gateway를 활용한 라우팅과 필터 |
 
 ---
 
@@ -121,3 +133,4 @@ Lambda는 각 함수가 독립적으로 배포되고 실행되므로, 서비스�
 - 2026-02-11 : Eureka Server 및 Client 프로젝트 생성 및 실행
 - 2026-02-11 : OpenFeign 적용, Product 3개 인스턴스 로드밸런싱 확인
 - 2026-02-12 : Resilience4j Circuit Breaker 적용, fallback 동작 확인
+- 2026-02-12 : API Gateway 추가, 라우팅 및 GlobalFilter 적용

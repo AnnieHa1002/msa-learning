@@ -50,3 +50,41 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 }
 ```
+
+---
+
+### 3. Gateway 라우트 404 Not Found
+
+**에러 메시지**
+```
+Whitelabel Error Page
+There was an unexpected error (type=Not Found, status=404).
+```
+
+**원인**
+
+Spring Cloud Gateway 5.0 (Spring Cloud 2025.x)에서 설정 property prefix가 변경되었다.
+기존 `spring.cloud.gateway.routes`가 더 이상 인식되지 않아 라우트가 등록되지 않음.
+
+**해결**
+
+`spring.cloud.gateway.routes`를 `spring.cloud.gateway.server.webflux.routes`로 변경:
+```yaml
+# 변경 전 (동작 안 함)
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: order-service
+          ...
+
+# 변경 후 (동작)
+spring:
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: order-service
+              ...
+```
