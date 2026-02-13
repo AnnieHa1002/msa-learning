@@ -32,6 +32,7 @@ public class AuthService {
         return Jwts.builder()
                 .issuer(issuer)
                 .claim("user_id", userId)
+                .claim("role", "ADMIN")
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + accessExpiration))
                 .signWith(secretKey, SignatureAlgorithm.HS512)
