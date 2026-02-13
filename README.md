@@ -12,6 +12,7 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 | `com.sparta.msa_learning.product` | Product Service (상품) | 19093 |
 | `com.sparta.msa_learning.product2` | Product Service (상품) | 19094 |
 | `com.sparta.msa_learning.product3` | Product Service (상품) | 19095 |
+| `com.sparta.msa_learning.auth` | Auth Service (인증/JWT) | 19096 |
 
 ## 기술 스택
 
@@ -22,6 +23,7 @@ MSA(Microservice Architecture) 학습을 위한 프로젝트
 - Spring Cloud OpenFeign
 - Resilience4j (Circuit Breaker)
 - Spring Cloud Gateway
+- JJWT 0.13.0 (JWT 인증)
 
 ## 실습 진행 과정
 
@@ -64,6 +66,19 @@ Spring Cloud Gateway를 활용하여 클라이언트 요청을 각 서비스로 
 | `a12b2f5` | API Gateway 프로젝트 추가 |
 | `112c6a9` | Gateway 설정 수정 (Spring Cloud Gateway 5.0 property 경로 대응) |
 
+### 5단계: JWT 인증 실습
+
+Auth Service를 추가하고, Gateway에서 JWT 토큰을 검증하는 인증 흐름을 구현했다.
+
+| 커밋 | 내용 |
+|------|------|
+| - | Auth Service 프로젝트 추가 (JWT 토큰 발급) |
+| - | Gateway에 `LocalJwtAuthenticationFilter` 구현 (JWT 토큰 검증) |
+| - | Gateway에서 `/api/auth/**` 경로 인증 bypass 처리 |
+| - | Gateway에서 `spring-boot-starter-security` 제거 (JWT GlobalFilter로 대체) |
+| - | Auth Service에 `jjwt-impl`, `jjwt-jackson` 런타임 의존성 추가 |
+| - | Gateway JWT 키 디코딩 방식을 Auth Service와 동일하게 통일 (`Decoders.BASE64URL`) |
+
 > 트러블슈팅은 [TROUBLESHOOTING.md](TROUBLESHOOTING.md) 참고
 
 ## 학습 문서
@@ -75,6 +90,7 @@ Spring Cloud Gateway를 활용하여 클라이언트 요청을 각 서비스로 
 | [OpenFeign과 로드밸런싱](docs/02-openfeign.md) | 선언적 HTTP 클라이언트, Round Robin 로드밸런싱 검증 |
 | [Circuit Breaker](docs/03-circuitbreaker.md) | Resilience4j를 활용한 장애 격리와 fallback |
 | [API Gateway](docs/04-gateway.md) | Spring Cloud Gateway를 활용한 라우팅과 필터 |
+| [JWT 인증](docs/05-jwt-auth.md) | JWT 토큰 발급/검증, Gateway 인증 필터 |
 
 ---
 
@@ -116,6 +132,7 @@ Lambda는 각 함수가 독립적으로 배포되고 실행되므로, 서비스�
 - **API Gateway** : 클라이언트 요청을 적절한 서비스로 라우팅
 - **Config Server** : 서비스들의 설정을 중앙에서 관리
 - **Circuit Breaker** : 장애 서비스 호출 시 빠르게 실패하여 전체 시스템 보호
+- **JWT 인증** : Gateway에서 토큰 기반 인증을 통해 서비스 접근 제어
 
 ### Learning Points
 
@@ -134,3 +151,5 @@ Lambda는 각 함수가 독립적으로 배포되고 실행되므로, 서비스�
 - 2026-02-11 : OpenFeign 적용, Product 3개 인스턴스 로드밸런싱 확인
 - 2026-02-12 : Resilience4j Circuit Breaker 적용, fallback 동작 확인
 - 2026-02-12 : API Gateway 추가, 라우팅 및 GlobalFilter 적용
+- 2026-02-13 : Auth Service 추가, JWT 토큰 발급/검증 구현
+- 2026-02-13 : Gateway JWT 인증 필터 적용, Spring Security 이슈 해결
