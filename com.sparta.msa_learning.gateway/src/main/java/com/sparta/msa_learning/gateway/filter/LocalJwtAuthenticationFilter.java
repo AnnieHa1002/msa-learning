@@ -2,6 +2,7 @@ package com.sparta.msa_learning.gateway.filter;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,7 +26,7 @@ public class LocalJwtAuthenticationFilter implements GlobalFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
-        if (path.startsWith("/api/auth")) {
+        if (path.startsWith("/api/auth")|| path.equals("/api/auth/**")) {
             return chain.filter(exchange);
         }
 
@@ -50,7 +51,7 @@ public class LocalJwtAuthenticationFilter implements GlobalFilter {
 
     private boolean validateToken(String token) {
         try {
-            SecretKey secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+            SecretKey secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(jwtSecret));
 
             Jwts.parser()
                     .verifyWith(secretKey)
