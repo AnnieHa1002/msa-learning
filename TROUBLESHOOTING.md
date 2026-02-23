@@ -157,6 +157,116 @@ dependencies {
 
 ---
 
+### 7. Config Server — `@EnableConfigServer` 누락 및 YAML 들여쓰기 오류
+
+**증상**
+
+Config Server가 설정 파일을 서빙하지 않거나 정상적으로 구동되지 않음.
+
+**원인 1: `@EnableConfigServer` 누락**
+
+`@SpringBootApplication`만 선언하면 Config Server 기능이 활성화되지 않는다. `@EnableConfigServer` 어노테이션이 필요하다.
+
+**원인 2: `application.yaml` 들여쓰기 오류**
+
+`spring.cloud.config.server.native.search-locations`가 `spring.application` 하위에 잘못 중첩되어 설정이 무시됨.
+
+```yaml
+# 잘못된 구조
+spring:
+  application:
+    name: config-server
+    cloud:          # ← application 하위에 있음 (오류)
+      config:
+        server:
+          native:
+            search-locations: classpath:/config-repo
+
+# 올바른 구조
+spring:
+  application:
+    name: config-server
+  cloud:            # ← spring 하위에 있어야 함
+    config:
+      server:
+        native:
+          search-locations: classpath:/config-repo
+```
+
+**해결**
+
+```java
+@EnableConfigServer  // 추가
+@SpringBootApplication
+public class ConfigApplication { ... }
+```
+
+---
+
+### 8. Config Client — `Unable to load config data from 'configserver:'`
+
+**에러 메시지**
+```
+java.lang.IllegalStateException: Unable to load config data from 'configserver:'
+Caused by: Incorrect ConfigDataLocationResolver chosen ...
+The location is being resolved using the StandardConfigDataLocationResolver
+```
+
+**원인**
+
+세 가지 문제가 복합적으로 발생:
+
+1. **`spring.config.import` URI 오타** — `"config-server:"` (하이픈 포함)로 작성하면 Spring이 인식하지 못함. `"configserver:"`가 Spring Cloud Config의 고정 URI 스키마임.
+
+2. **잘못된 의존성** — Product Service(config 클라이언트)에 `spring-cloud-config-server`(서버용)가 포함되어 `ConfigServerConfigDataLocationResolver`가 정상 등록되지 않음.
+
+3. **Spring Boot 4.0 변경사항** — Spring Boot 3.x에서는 discovery-based config가 bootstrap 없이도 동작했으나, Spring Boot 4.0에서는 bootstrap context가 기본 비활성화됨. `spring-cloud-starter-bootstrap` 없이는 `configserver:` (URL 미지정) 방식으로 Eureka에서 Config Server를 찾지 못하고 기본값 `localhost:8888`로 fallback함.
+
+**해결**
+
+```groovy
+// build.gradle — 서버용 의존성 제거, 클라이언트 의존성 추가
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'     // config 클라이언트
+    implementation 'org.springframework.cloud:spring-cloud-starter-bootstrap'  // bootstrap context 활성화
+}
+```
+
+```yaml
+# application.yaml — config import 제거, bootstrap.yaml로 이전
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: local
+```
+
+```yaml
+# bootstrap.yaml (신규 생성) — bootstrap context에서 discovery 설정 읽음
+spring:
+  application:
+    name: product-service
+  cloud:
+    config:
+      discovery:
+        enabled: true
+        service-id: "config-server"
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/
+```
+
+**핵심 교훈**
+
+- `configserver:`는 Spring Cloud Config의 고정 URI 스키마이며, Eureka 서비스 ID와 다른 개념이다.
+- Config 클라이언트에는 `spring-cloud-starter-config`를, Config 서버에는 `spring-cloud-config-server`를 사용한다.
+- Spring Boot 4.0에서 discovery-first config를 사용하려면 `spring-cloud-starter-bootstrap`이 필요하며, discovery 설정은 `bootstrap.yaml`에 작성해야 한다.
+- `application.yaml`에서 `spring.cloud.bootstrap.enabled=true`를 설정해도 `spring-cloud-starter-bootstrap` 없이는 효과가 없다.
+
+---
+
 ### 6. Gateway JWT 토큰 검증 실패 — Secret Key 디코딩 방식 불일치
 
 **증상**
