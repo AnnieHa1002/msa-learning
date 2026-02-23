@@ -19,10 +19,12 @@ public class ProductController {
     @Value("${server.port}")
     String serverPort;
 
+    @Value("${message}")
+    String message;
 
     @GetMapping("")
     public String getProducts() {
-        return "상품 목록을 반환합니다.";
+        return message + " (서버 포트: " + serverPort + ")";
     }
 
     @GetMapping("/{id}")

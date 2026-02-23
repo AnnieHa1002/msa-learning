@@ -1,0 +1,20 @@
+
+
+server:
+  port: 18080
+
+spring:
+  profiles:
+    active: native
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:/config-repo  # 로컬 파일 시스템에서 설정 파일을 검색하도록 지정
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:19090/eureka/  # Eureka 서버의 URL
