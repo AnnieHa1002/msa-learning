@@ -3,13 +3,15 @@ spring:
     name: product-service
   profiles:
     active: local
-  config:
-    import: "config-server:"
   cloud:
+    bootstrap:
+      enabled: true
     config:
       discovery:
         enabled: true
         service-id: "config-server"
+  config:
+    import: "configserver:"
 
 
 server:
